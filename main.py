@@ -3,8 +3,7 @@ from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
-from wtforms.validators import DataRequired
-import requests, json
+import requests
 
 
 app = Flask(__name__)
@@ -48,12 +47,15 @@ class AddMovieForm(FlaskForm):
     title = StringField("Movie Title")
     submit = SubmitField("Add Movie")
 
-db.create_all()
+
+with app.app_context():
+    db.create_all()
 
 # Home route - list all favorite movies, if in db
 @app.route("/")
 def home():
     ##READ ALL RECORDS
+    
     all_movies = Movie.query.order_by(Movie.rating).all()
     for i in range(len(all_movies)):
         all_movies[i].ranking = len(all_movies) - i
@@ -82,7 +84,7 @@ def add():
 def edit():
     form = EditMovieForm()
     movie_id = request.args.get("id")
-    movie = Movie.query.get(movie_id)
+    movie = db.session.get(Movie, int(movie_id))
 
     if form.validate_on_submit():
         movie.rating = float(form.rating.data)
@@ -96,7 +98,7 @@ def edit():
 def find():
     form = EditMovieForm()
     movie_id = request.args.get("id")
-    movie = Movie.query.get(movie_id)
+    movie = db.session.get(Movie, int(movie_id))
     print(movie)
     MOVIE_DB_IMAGE_URL = "https://image.tmdb.org/t/p/w500/"
     print(MOVIE_DB_IMAGE_URL)
@@ -121,7 +123,8 @@ def delete():
     movie_id = request.args.get('id')
 
     # DELETE MOVIE FROM DB BY ID
-    movie_to_delete = Movie.query.get(movie_id)
+    # movie_to_delete = Movie.query.get(movie_id)
+    movie_to_delete = db.session.get(Movie, int(movie_id))
     db.session.delete(movie_to_delete)
     db.session.commit()
     return redirect(url_for('home'))
